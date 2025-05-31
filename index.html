@@ -326,6 +326,10 @@
 
         // Função para formatar valores monetários
         function formatCurrency(value) {
+            // Garante que o valor é um número finito antes de formatar
+            if (typeof value !== 'number' || !isFinite(value)) {
+                return "R$ 0,00"; // Ou qualquer outro placeholder para valores inválidos
+            }
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
         }
 
@@ -355,20 +359,25 @@
 
         // Função para renderizar a tela apropriada (login/registro ou dashboard)
         function renderApp() {
-            const currentUser = getCurrentUser();
-            if (currentUser) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                document.getElementById('user-name').textContent = currentUser.name;
-                updateDashboard();
-                renderTransactionsList();
-                renderTips();
-                activateNavLink('nav-dashboard'); // Ativa a aba Dashboard por padrão
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('dashboard-screen').classList.add('hidden');
-                document.getElementById('login-form-container').classList.remove('hidden');
-                document.getElementById('register-form-container').classList.add('hidden');
+            try {
+                const currentUser = getCurrentUser();
+                if (currentUser) {
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('dashboard-screen').classList.remove('hidden');
+                    document.getElementById('user-name').textContent = currentUser.name;
+                    updateDashboard();
+                    renderTransactionsList();
+                    renderTips();
+                    activateNavLink('nav-dashboard'); // Ativa a aba Dashboard por padrão
+                } else {
+                    document.getElementById('auth-screen').classList.remove('hidden');
+                    document.getElementById('dashboard-screen').classList.add('hidden');
+                    document.getElementById('login-form-container').classList.remove('hidden');
+                    document.getElementById('register-form-container').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error("Erro ao renderizar o aplicativo:", error);
+                showAlert("Ocorreu um erro ao carregar o aplicativo. Tente novamente.");
             }
         }
 
@@ -498,6 +507,12 @@
             let category = document.getElementById('transaction-category').value;
             const date = document.getElementById('transaction-date').value;
 
+            // Validação do valor da transação
+            if (isNaN(amount) || amount <= 0) {
+                showAlert('Por favor, insira um valor numérico válido e maior que zero para a transação.', 'error');
+                return;
+            }
+
             // Se a categoria for "Não Categorizado", tenta auto-classificar
             if (category === 'uncategorized') {
                 category = autoClassify(description);
@@ -541,305 +556,338 @@
 
         // Renderizar Lista de Transações
         function renderTransactionsList() {
-            const transactions = getTransactions().sort((a, b) => new Date(b.date) - new Date(a.date)); // Ordena por data mais recente
-            const transactionsListBody = document.getElementById('transactions-list');
-            const allTransactionsListBody = document.getElementById('all-transactions-list');
+            try {
+                const transactions = getTransactions().sort((a, b) => new Date(b.date) - new Date(a.date)); // Ordena por data mais recente
+                const transactionsListBody = document.getElementById('transactions-list');
+                const allTransactionsListBody = document.getElementById('all-transactions-list');
 
-            // Limpa as listas existentes
-            transactionsListBody.innerHTML = '';
-            allTransactionsListBody.innerHTML = '';
+                // Limpa as listas existentes
+                transactionsListBody.innerHTML = '';
+                allTransactionsListBody.innerHTML = '';
 
-            if (transactions.length === 0) {
-                transactionsListBody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-400">Nenhuma transação ainda.</td></tr>`;
-                allTransactionsListBody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-400">Nenhuma transação ainda.</td></tr>`;
-                return;
+                if (transactions.length === 0) {
+                    const noTransactionsRow = `<tr><td colspan="6" class="py-4 text-center text-gray-400">Nenhuma transação ainda.</td></tr>`;
+                    transactionsListBody.innerHTML = noTransactionsRow;
+                    allTransactionsListBody.innerHTML = noTransactionsRow;
+                    return;
+                }
+
+                transactions.forEach(t => {
+                    const row = `
+                        <tr class="hover:bg-gray-700 transition duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.description}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}">
+                                ${formatCurrency(t.amount)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.type === 'income' ? 'Receita' : 'Despesa'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.category.charAt(0).toUpperCase() + t.category.slice(1)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button onclick="editTransaction(${t.id})" class="text-indigo-400 hover:text-indigo-600 mr-3">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteTransaction(${t.id})" class="text-red-400 hover:text-red-600">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    transactionsListBody.innerHTML += row;
+                    allTransactionsListBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error("Erro ao renderizar lista de transações:", error);
+                showAlert("Ocorreu um erro ao carregar as transações.");
             }
-
-            transactions.forEach(t => {
-                const row = `
-                    <tr class="hover:bg-gray-700 transition duration-150">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${new Date(t.date).toLocaleDateString('pt-BR')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.description}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}">
-                            ${formatCurrency(t.amount)}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.type === 'income' ? 'Receita' : 'Despesa'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.category.charAt(0).toUpperCase() + t.category.slice(1)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="editTransaction(${t.id})" class="text-indigo-400 hover:text-indigo-600 mr-3">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="deleteTransaction(${t.id})" class="text-red-400 hover:text-red-600">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                transactionsListBody.innerHTML += row;
-                allTransactionsListBody.innerHTML += row;
-            });
         }
 
         // Atualizar Dashboard (Resumo e Gráficos)
         function updateDashboard() {
-            const transactions = getTransactions();
-            let totalIncome = 0;
-            let totalExpenses = 0;
-            const expensesByCategory = {};
-            const monthlyFlow = {}; // { 'YYYY-MM': { income: 0, expense: 0 } }
+            try {
+                const transactions = getTransactions();
+                let totalIncome = 0;
+                let totalExpenses = 0;
+                const expensesByCategory = {};
+                const monthlyFlow = {}; // { 'YYYY-MM': { income: 0, expense: 0 } }
 
-            transactions.forEach(t => {
-                const monthYear = t.date.substring(0, 7); // YYYY-MM
-                if (!monthlyFlow[monthYear]) {
-                    monthlyFlow[monthYear] = { income: 0, expense: 0 };
-                }
-
-                if (t.type === 'income') {
-                    totalIncome += t.amount;
-                    monthlyFlow[monthYear].income += t.amount;
-                } else {
-                    totalExpenses += t.amount;
-                    monthlyFlow[monthYear].expense += t.amount;
-
-                    if (expensesByCategory[t.category]) {
-                        expensesByCategory[t.category] += t.amount;
-                    } else {
-                        expensesByCategory[t.category] = t.amount;
+                transactions.forEach(t => {
+                    // Garante que t.amount é um número antes de somar
+                    const amount = typeof t.amount === 'number' && isFinite(t.amount) ? t.amount : 0;
+                    const monthYear = t.date ? t.date.substring(0, 7) : 'Unknown-Date'; // Definição segura de data
+                    
+                    if (!monthlyFlow[monthYear]) {
+                        monthlyFlow[monthYear] = { income: 0, expense: 0 };
                     }
-                }
-            });
 
-            const totalBalance = totalIncome - totalExpenses;
+                    if (t.type === 'income') {
+                        totalIncome += amount;
+                        monthlyFlow[monthYear].income += amount;
+                    } else {
+                        totalExpenses += amount;
+                        monthlyFlow[monthYear].expense += amount;
 
-            document.getElementById('total-balance').textContent = formatCurrency(totalBalance);
-            document.getElementById('total-income').textContent = formatCurrency(totalIncome);
-            document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+                        if (expensesByCategory[t.category]) {
+                            expensesByCategory[t.category] += amount;
+                        } else {
+                            expensesByCategory[t.category] = amount;
+                        }
+                    }
+                });
 
-            // Atualizar Gráfico de Despesas por Categoria
-            renderExpensesByCategoryChart(expensesByCategory);
-            // Atualizar Gráfico de Fluxo Mensal
-            renderMonthlyFlowChart(monthlyFlow);
+                const totalBalance = totalIncome - totalExpenses;
+
+                document.getElementById('total-balance').textContent = formatCurrency(totalBalance);
+                document.getElementById('total-income').textContent = formatCurrency(totalIncome);
+                document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+
+                // Atualizar Gráfico de Despesas por Categoria
+                renderExpensesByCategoryChart(expensesByCategory);
+                // Atualizar Gráfico de Fluxo Mensal
+                renderMonthlyFlowChart(monthlyFlow);
+            } catch (error) {
+                console.error("Erro ao atualizar o Dashboard:", error);
+                showAlert("Ocorreu um erro ao carregar o dashboard.");
+            }
         }
 
         // Renderizar Gráfico de Despesas por Categoria
         function renderExpensesByCategoryChart(data) {
-            const ctx = document.getElementById('expensesByCategoryChart').getContext('2d');
-            if (expensesChartInstance) {
-                expensesChartInstance.destroy(); // Destrói a instância anterior para evitar sobreposição
-            }
+            try {
+                const ctx = document.getElementById('expensesByCategoryChart').getContext('2d');
+                if (expensesChartInstance) {
+                    expensesChartInstance.destroy(); // Destrói a instância anterior para evitar sobreposição
+                }
 
-            const labels = Object.keys(data).map(category => category.charAt(0).toUpperCase() + category.slice(1));
-            const values = Object.values(data);
+                const labels = Object.keys(data).map(category => category.charAt(0).toUpperCase() + category.slice(1));
+                const values = Object.values(data);
 
-            expensesChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: [
-                            '#d946ef', // purple-500
-                            '#8b5cf6', // violet-500
-                            '#6366f1', // indigo-500
-                            '#3b82f6', // blue-500
-                            '#06b6d4', // cyan-500
-                            '#10b981', // emerald-500
-                            '#f59e0b', // amber-500
-                            '#ef4444', // red-500
-                            '#f97316'  // orange-500
-                        ],
-                        hoverOffset: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#cbd5e0' // text-gray-300
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
+                expensesChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [
+                                '#d946ef', // purple-500
+                                '#8b5cf6', // violet-500
+                                '#6366f1', // indigo-500
+                                '#3b82f6', // blue-500
+                                '#06b6d4', // cyan-500
+                                '#10b981', // emerald-500
+                                '#f59e0b', // amber-500
+                                '#ef4444', // red-500
+                                '#f97316'  // orange-500
+                            ],
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#cbd5e0' // text-gray-300
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += formatCurrency(context.parsed);
+                                        }
+                                        return label;
                                     }
-                                    if (context.parsed !== null) {
-                                        label += formatCurrency(context.parsed);
-                                    }
-                                    return label;
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error("Erro ao renderizar o gráfico de Despesas por Categoria:", error);
+                // Não precisa de showAlert aqui, pois o dashboard já tem um alerta geral.
+            }
         }
 
         // Renderizar Gráfico de Fluxo Mensal
         function renderMonthlyFlowChart(data) {
-            const ctx = document.getElementById('monthlyFlowChart').getContext('2d');
-            if (monthlyChartInstance) {
-                monthlyChartInstance.destroy(); // Destrói a instância anterior
-            }
+            try {
+                const ctx = document.getElementById('monthlyFlowChart').getContext('2d');
+                if (monthlyChartInstance) {
+                    monthlyChartInstance.destroy(); // Destrói a instância anterior
+                }
 
-            const sortedMonths = Object.keys(data).sort();
-            const incomes = sortedMonths.map(month => data[month].income);
-            const expenses = sortedMonths.map(month => data[month].expense);
+                const sortedMonths = Object.keys(data).sort();
+                const incomes = sortedMonths.map(month => data[month].income);
+                const expenses = sortedMonths.map(month => data[month].expense);
 
-            monthlyChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sortedMonths,
-                    datasets: [
-                        {
-                            label: 'Receitas',
-                            data: incomes,
-                            backgroundColor: '#10b981', // emerald-500
-                            borderRadius: 4
-                        },
-                        {
-                            label: 'Despesas',
-                            data: expenses,
-                            backgroundColor: '#ef4444', // red-500
-                            borderRadius: 4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#cbd5e0'
+                monthlyChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedMonths,
+                        datasets: [
+                            {
+                                label: 'Receitas',
+                                data: incomes,
+                                backgroundColor: '#10b981', // emerald-500
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Despesas',
+                                data: expenses,
+                                backgroundColor: '#ef4444', // red-500
+                                borderRadius: 4
                             }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#cbd5e0'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += formatCurrency(context.parsed.y);
+                                        }
+                                        return label;
                                     }
-                                    if (context.parsed.y !== null) {
-                                        label += formatCurrency(context.parsed.y);
-                                    }
-                                    return label;
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            stacked: false,
-                            grid: {
-                                color: '#4a5568' // gray-600
-                            },
-                            ticks: {
-                                color: '#cbd5e0'
-                            }
                         },
-                        y: {
-                            stacked: false,
-                            grid: {
-                                color: '#4a5568'
+                        scales: {
+                            x: {
+                                stacked: false,
+                                grid: {
+                                    color: '#4a5568' // gray-600
+                                },
+                                ticks: {
+                                    color: '#cbd5e0'
+                                }
                             },
-                            ticks: {
-                                color: '#cbd5e0',
-                                callback: function(value) {
-                                    return formatCurrency(value);
+                            y: {
+                                stacked: false,
+                                grid: {
+                                    color: '#4a5568'
+                                },
+                                ticks: {
+                                    color: '#cbd5e0',
+                                    callback: function(value) {
+                                        return formatCurrency(value);
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error("Erro ao renderizar o gráfico de Fluxo Mensal:", error);
+                // Não precisa de showAlert aqui.
+            }
         }
 
         // Função para gerar Dicas (muito simplificada)
         function generateTips() {
-            const transactions = getTransactions();
-            let totalExpenses = 0;
-            let expensesByCategories = {};
-            let incomeTransactions = transactions.filter(t => t.type === 'income');
-            let expenseTransactions = transactions.filter(t => t.type === 'expense');
+            try {
+                const transactions = getTransactions();
+                let totalExpenses = 0;
+                let totalIncome = 0;
+                let expensesByCategories = {};
+                
+                transactions.forEach(t => {
+                    const amount = typeof t.amount === 'number' && isFinite(t.amount) ? t.amount : 0;
+                    if (t.type === 'income') {
+                        totalIncome += amount;
+                    } else {
+                        totalExpenses += amount;
+                        if (expensesByCategories[t.category]) {
+                            expensesByCategories[t.category] += amount;
+                        } else {
+                            expensesByCategories[t.category] = amount;
+                        }
+                    }
+                });
 
-            expenseTransactions.forEach(t => {
-                totalExpenses += t.amount;
-                if (expensesByCategories[t.category]) {
-                    expensesByCategories[t.category] += t.amount;
-                } else {
-                    expensesByCategories[t.category] = t.amount;
+                const tipsContainer = document.getElementById('tips-container');
+                tipsContainer.innerHTML = ''; // Limpa dicas anteriores
+
+                const tips = [];
+
+                // Dica geral sobre controle
+                tips.push({
+                    title: "Mantenha o Controle!",
+                    description: "Registrar todas as suas transações é o primeiro passo para ter uma visão clara de suas finanças. Continue assim!"
+                });
+
+                // Dica baseada em despesas altas
+                const sortedCategories = Object.entries(expensesByCategories).sort(([, a], [, b]) => b - a);
+                if (sortedCategories.length > 0 && sortedCategories[0][1] > 500) { // Exemplo: se a categoria mais alta for > R$500
+                    tips.push({
+                        title: `Atenção com ${sortedCategories[0][0].charAt(0).toUpperCase() + sortedCategories[0][0].slice(1)}!`,
+                        description: `Sua maior despesa este mês foi em ${sortedCategories[0][0]}. Analise se há formas de reduzir gastos nesta área.`
+                    });
                 }
-            });
 
-            const tipsContainer = document.getElementById('tips-container');
-            tipsContainer.innerHTML = ''; // Limpa dicas anteriores
+                // Dica para saldo negativo ou próximo de zero
+                const totalBalance = totalIncome - totalExpenses;
+                if (totalBalance < 0) {
+                    tips.push({
+                        title: "Seu Saldo Está Negativo!",
+                        description: "É hora de revisar suas despesas e identificar onde é possível cortar gastos para equilibrar suas finanças."
+                    });
+                } else if (totalBalance < 200 && totalExpenses > 0) { // Exemplo: saldo baixo mas positivo
+                    tips.push({
+                        title: "Cuidado com o Saldo Baixo!",
+                        description: "Seu saldo está um pouco apertado. Considere criar um orçamento para evitar surpresas no final do mês."
+                    });
+                }
 
-            const tips = [];
+                // Dica sobre economia/investimento se houver receita e poucas despesas
+                if (totalIncome > 0 && (totalExpenses / totalIncome) < 0.5 && totalIncome > 1000) { // Exemplo: gastou menos de 50% da receita
+                    tips.push({
+                        title: "Ótimo Desempenho!",
+                        description: "Você está gerenciando bem suas despesas! Que tal começar a pensar em investir uma parte do que sobra?"
+                    });
+                }
 
-            // Dica geral sobre controle
-            tips.push({
-                title: "Mantenha o Controle!",
-                description: "Registrar todas as suas transações é o primeiro passo para ter uma visão clara de suas finanças. Continue assim!"
-            });
+                // Dica sobre criar reserva de emergência
+                if (transactions.length > 5 && totalBalance > 500) { // Se já tem algumas transações e saldo positivo
+                    tips.push({
+                        title: "Pense na Reserva de Emergência!",
+                        description: "Ter uma reserva para imprevistos é crucial. Comece a guardar um pouco todo mês para sua segurança financeira."
+                    });
+                }
 
-            // Dica baseada em despesas altas
-            const sortedCategories = Object.entries(expensesByCategories).sort(([, a], [, b]) => b - a);
-            if (sortedCategories.length > 0 && sortedCategories[0][1] > 500) { // Exemplo: se a categoria mais alta for > R$500
-                tips.push({
-                    title: `Atenção com ${sortedCategories[0][0].charAt(0).toUpperCase() + sortedCategories[0][0].slice(1)}!`,
-                    description: `Sua maior despesa este mês foi em ${sortedCategories[0][0]}. Analise se há formas de reduzir gastos nesta área.`
-                });
-            }
-
-            // Dica para saldo negativo ou próximo de zero
-            const totalBalance = incomeTransactions.reduce((sum, t) => sum + t.amount, 0) - totalExpenses;
-            if (totalBalance < 0) {
-                tips.push({
-                    title: "Seu Saldo Está Negativo!",
-                    description: "É hora de revisar suas despesas e identificar onde é possível cortar gastos para equilibrar suas finanças."
-                });
-            } else if (totalBalance < 200 && totalExpenses > 0) { // Exemplo: saldo baixo mas positivo
-                tips.push({
-                    title: "Cuidado com o Saldo Baixo!",
-                    description: "Seu saldo está um pouco apertado. Considere criar um orçamento para evitar surpresas no final do mês."
-                });
-            }
-
-            // Dica sobre economia/investimento se houver receita e poucas despesas
-            if (totalIncome > 0 && totalExpenses / totalIncome < 0.5 && totalIncome > 1000) { // Exemplo: gastou menos de 50% da receita
-                tips.push({
-                    title: "Ótimo Desempenho!",
-                    description: "Você está gerenciando bem suas despesas! Que tal começar a pensar em investir uma parte do que sobra?"
-                });
-            }
-
-            // Dica sobre criar reserva de emergência
-            if (transactions.length > 5 && totalBalance > 500) { // Se já tem algumas transações e saldo positivo
-                tips.push({
-                    title: "Pense na Reserva de Emergência!",
-                    description: "Ter uma reserva para imprevistos é crucial. Comece a guardar um pouco todo mês para sua segurança financeira."
-                });
-            }
-
-            // Renderiza as dicas
-            if (tips.length === 0) {
-                tipsContainer.innerHTML = `<p class="text-gray-400 text-center">Nenhuma dica disponível no momento. Adicione mais transações para obter insights!</p>`;
-            } else {
-                tips.forEach(tip => {
-                    const tipElement = `
-                        <div class="card p-6 border-l-4 border-purple-500">
-                            <h4 class="text-xl font-semibold text-white mb-2">${tip.title}</h4>
-                            <p class="text-gray-300">${tip.description}</p>
-                        </div>
-                    `;
-                    tipsContainer.innerHTML += tipElement;
-                });
+                // Renderiza as dicas
+                if (tips.length === 0) {
+                    tipsContainer.innerHTML = `<p class="text-gray-400 text-center">Nenhuma dica disponível no momento. Adicione mais transações para obter insights!</p>`;
+                } else {
+                    tips.forEach(tip => {
+                        const tipElement = `
+                            <div class="card p-6 border-l-4 border-purple-500">
+                                <h4 class="text-xl font-semibold text-white mb-2">${tip.title}</h4>
+                                <p class="text-gray-300">${tip.description}</p>
+                            </div>
+                        `;
+                        tipsContainer.innerHTML += tipElement;
+                    });
+                }
+            } catch (error) {
+                console.error("Erro ao gerar dicas:", error);
+                showAlert("Ocorreu um erro ao gerar as dicas financeiras.");
             }
         }
 
