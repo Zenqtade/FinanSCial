@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanSCial - Seu Controle Financeiro Pessoal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Fundo escuro principal */
+            color: #e2e8f0; /* Texto claro */
+        }
+        .gradient-button {
+            background-image: linear-gradient(to right, #6366f1, #8b5cf6, #d946ef);
+            transition: all 0.3s ease;
+        }
+        .gradient-button:hover {
+            background-position: right center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .card {
+            background-color: #2d3748; /* Fundo dos cards */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .input-field {
+            background-color: #4a5568; /* Fundo dos inputs */
+            border: 1px solid #4a5568;
+            color: #e2e8f0;
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+        .input-field:focus {
+            border-color: #6366f1; /* Cor de foco */
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+        }
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748; /* Cor da trilha */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6366f1; /* Cor do "polegar" */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8b5cf6; /* Cor do "polegar" ao passar o mouse */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div id="custom-alert" class="hidden fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-transform transform translate-x-full" role="alert">
+        <p id="alert-message"></p>
+    </div>
+    <div id="custom-success" class="hidden fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-transform transform translate-x-full" role="alert">
+        <p id="success-message"></p>
+    </div>
+
+    <div id="app-container" class="w-full max-w-7xl card p-8 flex flex-col md:flex-row min-h-[80vh]">
+
+        <div id="auth-screen" class="w-full flex flex-col items-center justify-center space-y-8">
+            <h1 class="text-5xl font-bold text-white mb-8">Bem-vindo ao <span class="gradient-text">FinanSCial</span></h1>
+            <style>
+                .gradient-text {
+                    background-image: linear-gradient(to right, #6366f1, #8b5cf6, #d946ef);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+            </style>
+
+            <div id="login-form-container" class="w-full max-w-md card p-8">
+                <h2 class="text-3xl font-semibold text-white mb-6 text-center">Entrar</h2>
+                <form id="login-form" class="space-y-6">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-300 mb-2">E-mail</label>
+                        <input type="email" id="login-email" class="input-field w-full p-3" placeholder="seu@email.com" required>
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-300 mb-2">Senha</label>
+                        <input type="password" id="login-password" class="input-field w-full p-3" placeholder="********" required>
+                    </div>
+                    <button type="submit" class="gradient-button w-full text-white font-bold py-3 px-4 rounded-lg text-lg hover:bg-purple-700 transition duration-300">
+                        Entrar
+                    </button>
+                </form>
+                <p class="text-center text-gray-400 mt-6">
+                    Não tem uma conta? <a href="#" id="show-register" class="text-purple-400 hover:underline">Cadastre-se</a>
+                </p>
+            </div>
+
+            <div id="register-form-container" class="w-full max-w-md card p-8 hidden">
+                <h2 class="text-3xl font-semibold text-white mb-6 text-center">Cadastre-se</h2>
+                <form id="register-form" class="space-y-6">
+                    <div>
+                        <label for="register-name" class="block text-sm font-medium text-gray-300 mb-2">Nome</label>
+                        <input type="text" id="register-name" class="input-field w-full p-3" placeholder="Seu nome" required>
+                    </div>
+                    <div>
+                        <label for="register-email" class="block text-sm font-medium text-gray-300 mb-2">E-mail</label>
+                        <input type="email" id="register-email" class="input-field w-full p-3" placeholder="seu@email.com" required>
+                    </div>
+                    <div>
+                        <label for="register-password" class="block text-sm font-medium text-gray-300 mb-2">Senha</label>
+                        <input type="password" id="register-password" class="input-field w-full p-3" placeholder="********" required>
+                    </div>
+                    <div>
+                        <label for="register-confirm-password" class="block text-sm font-medium text-gray-300 mb-2">Confirmar Senha</label>
+                        <input type="password" id="register-confirm-password" class="input-field w-full p-3" placeholder="********" required>
+                    </div>
+                    <button type="submit" class="gradient-button w-full text-white font-bold py-3 px-4 rounded-lg text-lg hover:bg-purple-700 transition duration-300">
+                        Registrar
+                    </button>
+                </form>
+                <p class="text-center text-gray-400 mt-6">
+                    Já tem uma conta? <a href="#" id="show-login" class="text-purple-400 hover:underline">Entrar</a>
+                </p>
+            </div>
+        </div>
+
+        <div id="dashboard-screen" class="hidden w-full flex flex-col md:flex-row">
+            <aside class="w-full md:w-64 bg-gray-800 p-6 rounded-xl md:mr-6 mb-6 md:mb-0 flex flex-col justify-between">
+                <div>
+                    <div class="text-center mb-10">
+                        <h2 class="text-3xl font-bold text-white gradient-text">FinanSCial</h2>
+                        <p class="text-gray-400 text-sm mt-2">Olá, <span id="user-name" class="font-semibold text-purple-300"></span>!</p>
+                    </div>
+                    <nav>
+                        <ul>
+                            <li class="mb-4">
+                                <a href="#" id="nav-dashboard" class="flex items-center text-gray-300 hover:text-purple-400 hover:bg-gray-700 p-3 rounded-lg transition duration-200">
+                                    <i class="fas fa-chart-line mr-3"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="mb-4">
+                                <a href="#" id="nav-transactions" class="flex items-center text-gray-300 hover:text-purple-400 hover:bg-gray-700 p-3 rounded-lg transition duration-200">
+                                    <i class="fas fa-exchange-alt mr-3"></i> Transações
+                                </a>
+                            </li>
+                            <li class="mb-4">
+                                <a href="#" id="nav-tips" class="flex items-center text-gray-300 hover:text-purple-400 hover:bg-gray-700 p-3 rounded-lg transition duration-200">
+                                    <i class="fas fa-lightbulb mr-3"></i> Dicas
+                                </a>
+                            </li>
+                            <li class="mb-4">
+                                <a href="#" id="nav-settings" class="flex items-center text-gray-300 hover:text-purple-400 hover:bg-gray-700 p-3 rounded-lg transition duration-200">
+                                    <i class="fas fa-cog mr-3"></i> Configurações
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <button id="logout-button" class="mt-8 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Sair
+                </button>
+            </aside>
+
+            <main class="flex-1 p-6 bg-gray-800 rounded-xl">
+                <section id="dashboard-content" class="active-content">
+                    <h1 class="text-4xl font-bold text-white mb-8">Dashboard</h1>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="card p-6 text-center">
+                            <p class="text-gray-400 text-sm">Saldo Atual</p>
+                            <p id="total-balance" class="text-4xl font-bold text-white mt-2">R$ 0,00</p>
+                        </div>
+                        <div class="card p-6 text-center">
+                            <p class="text-gray-400 text-sm">Receitas</p>
+                            <p id="total-income" class="text-4xl font-bold text-green-500 mt-2">R$ 0,00</p>
+                        </div>
+                        <div class="card p-6 text-center">
+                            <p class="text-gray-400 text-sm">Despesas</p>
+                            <p id="total-expenses" class="text-4xl font-bold text-red-500 mt-2">R$ 0,00</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="card p-6">
+                            <h3 class="text-xl font-semibold text-white mb-4">Despesas por Categoria</h3>
+                            <canvas id="expensesByCategoryChart"></canvas>
+                        </div>
+                        <div class="card p-6">
+                            <h3 class="text-xl font-semibold text-white mb-4">Fluxo Mensal</h3>
+                            <canvas id="monthlyFlowChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card p-6 mb-8">
+                        <h3 class="text-xl font-semibold text-white mb-4">Adicionar Nova Transação</h3>
+                        <form id="transaction-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="transaction-description" class="block text-sm font-medium text-gray-300 mb-2">Descrição</label>
+                                <input type="text" id="transaction-description" class="input-field w-full p-3" placeholder="Ex: Conta de luz" required>
+                            </div>
+                            <div>
+                                <label for="transaction-amount" class="block text-sm font-medium text-gray-300 mb-2">Valor</label>
+                                <input type="number" id="transaction-amount" class="input-field w-full p-3" step="0.01" placeholder="0.00" required>
+                            </div>
+                            <div>
+                                <label for="transaction-type" class="block text-sm font-medium text-gray-300 mb-2">Tipo</label>
+                                <select id="transaction-type" class="input-field w-full p-3" required>
+                                    <option value="income">Receita</option>
+                                    <option value="expense">Despesa</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="transaction-category" class="block text-sm font-medium text-gray-300 mb-2">Categoria</label>
+                                <select id="transaction-category" class="input-field w-full p-3">
+                                    <option value="uncategorized">Não Categorizado</option>
+                                    <option value="food">Alimentação</option>
+                                    <option value="transport">Transporte</option>
+                                    <option value="housing">Moradia</option>
+                                    <option value="health">Saúde</option>
+                                    <option value="education">Educação</option>
+                                    <option value="leisure">Lazer</option>
+                                    <option value="salary">Salário</option>
+                                    <option value="investment">Investimento</option>
+                                    <option value="others">Outros</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="transaction-date" class="block text-sm font-medium text-gray-300 mb-2">Data</label>
+                                <input type="date" id="transaction-date" class="input-field w-full p-3" required>
+                            </div>
+                            <div class="md:col-span-1 flex items-end">
+                                <button type="submit" class="gradient-button w-full text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                                    Adicionar Transação
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card p-6">
+                        <h3 class="text-xl font-semibold text-white mb-4">Últimas Transações</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-700">
+                                <thead class="bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Data</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Descrição</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Valor</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tipo</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Categoria</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-list" class="bg-gray-800 divide-y divide-gray-700">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="transactions-content" class="hidden">
+                    <h1 class="text-4xl font-bold text-white mb-8">Todas as Transações</h1>
+                    <div class="card p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-700">
+                                <thead class="bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Data</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Descrição</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Valor</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tipo</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Categoria</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="all-transactions-list" class="bg-gray-800 divide-y divide-gray-700">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="tips-content" class="hidden">
+                    <h1 class="text-4xl font-bold text-white mb-8">Dicas Financeiras</h1>
+                    <div id="tips-container" class="space-y-6">
+                        </div>
+                </section>
+
+                <section id="settings-content" class="hidden">
+                    <h1 class="text-4xl font-bold text-white mb-8">Configurações</h1>
+                    <div class="card p-6">
+                        <h3 class="text-xl font-semibold text-white mb-4">Gerenciar Conta</h3>
+                        <p class="text-gray-300 mb-4">Aqui você pode gerenciar suas informações de perfil e outras configurações.</p>
+                        <button id="delete-account-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                            Excluir Minha Conta
+                        </button>
+                        <p class="text-red-400 text-sm mt-2">Esta ação é irreversível.</p>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais para os gráficos
+        let expensesChartInstance;
+        let monthlyChartInstance;
+
+        // Função para exibir alertas personalizados
+        function showAlert(message, type = 'error') {
+            const alertBox = type === 'error' ? document.getElementById('custom-alert') : document.getElementById('custom-success');
+            const alertMessage = type === 'error' ? document.getElementById('alert-message') : document.getElementById('success-message');
+
+            alertMessage.textContent = message;
+            alertBox.classList.remove('hidden');
+            alertBox.classList.remove('translate-x-full');
+            alertBox.classList.add('translate-x-0');
+
+            setTimeout(() => {
+                alertBox.classList.remove('translate-x-0');
+                alertBox.classList.add('translate-x-full');
+                alertBox.classList.add('hidden');
+            }, 3000); // Esconde após 3 segundos
+        }
+
+        // Função para formatar valores monetários
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+
+        // Funções de Autenticação e Gerenciamento de Usuários
+        const usersKey = 'finanscial_users';
+        const currentUserKey = 'finanscial_current_user';
+
+        function getUsers() {
+            return JSON.parse(localStorage.getItem(usersKey)) || [];
+        }
+
+        function setUsers(users) {
+            localStorage.setItem(usersKey, JSON.stringify(users));
+        }
+
+        function getCurrentUser() {
+            return JSON.parse(localStorage.getItem(currentUserKey));
+        }
+
+        function setCurrentUser(user) {
+            localStorage.setItem(currentUserKey, JSON.stringify(user));
+        }
+
+        function clearCurrentUser() {
+            localStorage.removeItem(currentUserKey);
+        }
+
+        // Função para renderizar a tela apropriada (login/registro ou dashboard)
+        function renderApp() {
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+                document.getElementById('user-name').textContent = currentUser.name;
+                updateDashboard();
+                renderTransactionsList();
+                renderTips();
+                activateNavLink('nav-dashboard'); // Ativa a aba Dashboard por padrão
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('dashboard-screen').classList.add('hidden');
+                document.getElementById('login-form-container').classList.remove('hidden');
+                document.getElementById('register-form-container').classList.add('hidden');
+            }
+        }
+
+        // Event Listeners para alternar entre Login e Registro
+        document.getElementById('show-register').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-form-container').classList.add('hidden');
+            document.getElementById('register-form-container').classList.remove('hidden');
+        });
+
+        document.getElementById('show-login').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('register-form-container').classList.add('hidden');
+            document.getElementById('login-form-container').classList.remove('hidden');
+        });
+
+        // Lógica de Registro
+        document.getElementById('register-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+
+            if (password !== confirmPassword) {
+                showAlert('As senhas não coincidem!');
+                return;
+            }
+
+            let users = getUsers();
+            if (users.find(user => user.email === email)) {
+                showAlert('Este e-mail já está cadastrado.');
+                return;
+            }
+
+            users.push({ name, email, password, transactions: [] }); // Simples, sem hash de senha
+            setUsers(users);
+            showAlert('Cadastro realizado com sucesso! Faça login.', 'success');
+            document.getElementById('register-form').reset();
+            document.getElementById('show-login').click(); // Volta para a tela de login
+        });
+
+        // Lógica de Login
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            const users = getUsers();
+            const user = users.find(u => u.email === email && u.password === password); // Simples, sem hash de senha
+
+            if (user) {
+                setCurrentUser(user);
+                renderApp();
+            } else {
+                showAlert('E-mail ou senha incorretos.');
+            }
+        });
+
+        // Lógica de Logout
+        document.getElementById('logout-button').addEventListener('click', () => {
+            clearCurrentUser();
+            renderApp();
+        });
+
+        // Lógica de Excluir Conta
+        document.getElementById('delete-account-button').addEventListener('click', () => {
+            if (confirm('Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão perdidos.')) {
+                let users = getUsers();
+                const currentUser = getCurrentUser();
+                users = users.filter(u => u.email !== currentUser.email);
+                setUsers(users);
+                clearCurrentUser();
+                showAlert('Sua conta foi excluída com sucesso.', 'success');
+                renderApp();
+            }
+        });
+
+
+        // Funções de Gerenciamento de Transações
+        function getTransactions() {
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                const users = getUsers();
+                const user = users.find(u => u.email === currentUser.email);
+                return user ? user.transactions : [];
+            }
+            return [];
+        }
+
+        function saveTransactions(transactions) {
+            let users = getUsers();
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                users = users.map(u => {
+                    if (u.email === currentUser.email) {
+                        return { ...u, transactions };
+                    }
+                    return u;
+                });
+                setUsers(users);
+                // Atualiza o currentUser no localStorage para refletir as transações
+                setCurrentUser({ ...currentUser, transactions });
+            }
+        }
+
+        // Função para Classificação Automática (muito simplificada)
+        function autoClassify(description) {
+            const lowerDesc = description.toLowerCase();
+            if (lowerDesc.includes('mercado') || lowerDesc.includes('supermercado') || lowerDesc.includes('padaria') || lowerDesc.includes('alimentacao') || lowerDesc.includes('restaurante') || lowerDesc.includes('comida') || lowerDesc.includes('ifood')) return 'food';
+            if (lowerDesc.includes('uber') || lowerDesc.includes('onibus') || lowerDesc.includes('gasolina') || lowerDesc.includes('combustivel') || lowerDesc.includes('transporte')) return 'transport';
+            if (lowerDesc.includes('aluguel') || lowerDesc.includes('luz') || lowerDesc.includes('agua') || lowerDesc.includes('internet') || lowerDesc.includes('moradia')) return 'housing';
+            if (lowerDesc.includes('medico') || lowerDesc.includes('farmacia') || lowerDesc.includes('hospital') || lowerDesc.includes('plano de saude')) return 'health';
+            if (lowerDesc.includes('escola') || lowerDesc.includes('faculdade') || lowerDesc.includes('curso') || lowerDesc.includes('livro')) return 'education';
+            if (lowerDesc.includes('cinema') || lowerDesc.includes('show') || lowerDesc.includes('viagem') || lowerDesc.includes('bar') || lowerDesc.includes('lazer')) return 'leisure';
+            if (lowerDesc.includes('salario') || lowerDesc.includes('pagamento')) return 'salary';
+            if (lowerDesc.includes('investimento') || lowerDesc.includes('rendimento')) return 'investment';
+            return 'uncategorized';
+        }
+
+        // Lógica para Adicionar Transação
+        document.getElementById('transaction-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const description = document.getElementById('transaction-description').value;
+            const amount = parseFloat(document.getElementById('transaction-amount').value);
+            const type = document.getElementById('transaction-type').value;
+            let category = document.getElementById('transaction-category').value;
+            const date = document.getElementById('transaction-date').value;
+
+            // Se a categoria for "Não Categorizado", tenta auto-classificar
+            if (category === 'uncategorized') {
+                category = autoClassify(description);
+            }
+
+            const newTransaction = {
+                id: Date.now(), // ID único
+                description,
+                amount,
+                type,
+                category,
+                date
+            };
+
+            const transactions = getTransactions();
+            transactions.push(newTransaction);
+            saveTransactions(transactions);
+            showAlert('Transação adicionada com sucesso!', 'success');
+            document.getElementById('transaction-form').reset();
+            updateDashboard();
+            renderTransactionsList();
+            renderTips();
+        });
+
+        // Lógica para Deletar Transação
+        function deleteTransaction(id) {
+            let transactions = getTransactions();
+            transactions = transactions.filter(t => t.id !== id);
+            saveTransactions(transactions);
+            showAlert('Transação removida.', 'success');
+            updateDashboard();
+            renderTransactionsList();
+            renderTips();
+        }
+
+        // Lógica para Editar Transação (apenas simulação, sem formulário de edição completo)
+        function editTransaction(id) {
+            showAlert('Funcionalidade de edição não implementada neste protótipo.', 'error');
+            // Em uma aplicação real, você carregaria os dados da transação em um formulário para edição.
+        }
+
+        // Renderizar Lista de Transações
+        function renderTransactionsList() {
+            const transactions = getTransactions().sort((a, b) => new Date(b.date) - new Date(a.date)); // Ordena por data mais recente
+            const transactionsListBody = document.getElementById('transactions-list');
+            const allTransactionsListBody = document.getElementById('all-transactions-list');
+
+            // Limpa as listas existentes
+            transactionsListBody.innerHTML = '';
+            allTransactionsListBody.innerHTML = '';
+
+            if (transactions.length === 0) {
+                transactionsListBody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-400">Nenhuma transação ainda.</td></tr>`;
+                allTransactionsListBody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-400">Nenhuma transação ainda.</td></tr>`;
+                return;
+            }
+
+            transactions.forEach(t => {
+                const row = `
+                    <tr class="hover:bg-gray-700 transition duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.description}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}">
+                            ${formatCurrency(t.amount)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.type === 'income' ? 'Receita' : 'Despesa'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${t.category.charAt(0).toUpperCase() + t.category.slice(1)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="editTransaction(${t.id})" class="text-indigo-400 hover:text-indigo-600 mr-3">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteTransaction(${t.id})" class="text-red-400 hover:text-red-600">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                transactionsListBody.innerHTML += row;
+                allTransactionsListBody.innerHTML += row;
+            });
+        }
+
+        // Atualizar Dashboard (Resumo e Gráficos)
+        function updateDashboard() {
+            const transactions = getTransactions();
+            let totalIncome = 0;
+            let totalExpenses = 0;
+            const expensesByCategory = {};
+            const monthlyFlow = {}; // { 'YYYY-MM': { income: 0, expense: 0 } }
+
+            transactions.forEach(t => {
+                const monthYear = t.date.substring(0, 7); // YYYY-MM
+                if (!monthlyFlow[monthYear]) {
+                    monthlyFlow[monthYear] = { income: 0, expense: 0 };
+                }
+
+                if (t.type === 'income') {
+                    totalIncome += t.amount;
+                    monthlyFlow[monthYear].income += t.amount;
+                } else {
+                    totalExpenses += t.amount;
+                    monthlyFlow[monthYear].expense += t.amount;
+
+                    if (expensesByCategory[t.category]) {
+                        expensesByCategory[t.category] += t.amount;
+                    } else {
+                        expensesByCategory[t.category] = t.amount;
+                    }
+                }
+            });
+
+            const totalBalance = totalIncome - totalExpenses;
+
+            document.getElementById('total-balance').textContent = formatCurrency(totalBalance);
+            document.getElementById('total-income').textContent = formatCurrency(totalIncome);
+            document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+
+            // Atualizar Gráfico de Despesas por Categoria
+            renderExpensesByCategoryChart(expensesByCategory);
+            // Atualizar Gráfico de Fluxo Mensal
+            renderMonthlyFlowChart(monthlyFlow);
+        }
+
+        // Renderizar Gráfico de Despesas por Categoria
+        function renderExpensesByCategoryChart(data) {
+            const ctx = document.getElementById('expensesByCategoryChart').getContext('2d');
+            if (expensesChartInstance) {
+                expensesChartInstance.destroy(); // Destrói a instância anterior para evitar sobreposição
+            }
+
+            const labels = Object.keys(data).map(category => category.charAt(0).toUpperCase() + category.slice(1));
+            const values = Object.values(data);
+
+            expensesChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#d946ef', // purple-500
+                            '#8b5cf6', // violet-500
+                            '#6366f1', // indigo-500
+                            '#3b82f6', // blue-500
+                            '#06b6d4', // cyan-500
+                            '#10b981', // emerald-500
+                            '#f59e0b', // amber-500
+                            '#ef4444', // red-500
+                            '#f97316'  // orange-500
+                        ],
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#cbd5e0' // text-gray-300
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += formatCurrency(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Renderizar Gráfico de Fluxo Mensal
+        function renderMonthlyFlowChart(data) {
+            const ctx = document.getElementById('monthlyFlowChart').getContext('2d');
+            if (monthlyChartInstance) {
+                monthlyChartInstance.destroy(); // Destrói a instância anterior
+            }
+
+            const sortedMonths = Object.keys(data).sort();
+            const incomes = sortedMonths.map(month => data[month].income);
+            const expenses = sortedMonths.map(month => data[month].expense);
+
+            monthlyChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedMonths,
+                    datasets: [
+                        {
+                            label: 'Receitas',
+                            data: incomes,
+                            backgroundColor: '#10b981', // emerald-500
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Despesas',
+                            data: expenses,
+                            backgroundColor: '#ef4444', // red-500
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#cbd5e0'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += formatCurrency(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: false,
+                            grid: {
+                                color: '#4a5568' // gray-600
+                            },
+                            ticks: {
+                                color: '#cbd5e0'
+                            }
+                        },
+                        y: {
+                            stacked: false,
+                            grid: {
+                                color: '#4a5568'
+                            },
+                            ticks: {
+                                color: '#cbd5e0',
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Função para gerar Dicas (muito simplificada)
+        function generateTips() {
+            const transactions = getTransactions();
+            let totalExpenses = 0;
+            let expensesByCategories = {};
+            let incomeTransactions = transactions.filter(t => t.type === 'income');
+            let expenseTransactions = transactions.filter(t => t.type === 'expense');
+
+            expenseTransactions.forEach(t => {
+                totalExpenses += t.amount;
+                if (expensesByCategories[t.category]) {
+                    expensesByCategories[t.category] += t.amount;
+                } else {
+                    expensesByCategories[t.category] = t.amount;
+                }
+            });
+
+            const tipsContainer = document.getElementById('tips-container');
+            tipsContainer.innerHTML = ''; // Limpa dicas anteriores
+
+            const tips = [];
+
+            // Dica geral sobre controle
+            tips.push({
+                title: "Mantenha o Controle!",
+                description: "Registrar todas as suas transações é o primeiro passo para ter uma visão clara de suas finanças. Continue assim!"
+            });
+
+            // Dica baseada em despesas altas
+            const sortedCategories = Object.entries(expensesByCategories).sort(([, a], [, b]) => b - a);
+            if (sortedCategories.length > 0 && sortedCategories[0][1] > 500) { // Exemplo: se a categoria mais alta for > R$500
+                tips.push({
+                    title: `Atenção com ${sortedCategories[0][0].charAt(0).toUpperCase() + sortedCategories[0][0].slice(1)}!`,
+                    description: `Sua maior despesa este mês foi em ${sortedCategories[0][0]}. Analise se há formas de reduzir gastos nesta área.`
+                });
+            }
+
+            // Dica para saldo negativo ou próximo de zero
+            const totalBalance = incomeTransactions.reduce((sum, t) => sum + t.amount, 0) - totalExpenses;
+            if (totalBalance < 0) {
+                tips.push({
+                    title: "Seu Saldo Está Negativo!",
+                    description: "É hora de revisar suas despesas e identificar onde é possível cortar gastos para equilibrar suas finanças."
+                });
+            } else if (totalBalance < 200 && totalExpenses > 0) { // Exemplo: saldo baixo mas positivo
+                tips.push({
+                    title: "Cuidado com o Saldo Baixo!",
+                    description: "Seu saldo está um pouco apertado. Considere criar um orçamento para evitar surpresas no final do mês."
+                });
+            }
+
+            // Dica sobre economia/investimento se houver receita e poucas despesas
+            if (totalIncome > 0 && totalExpenses / totalIncome < 0.5 && totalIncome > 1000) { // Exemplo: gastou menos de 50% da receita
+                tips.push({
+                    title: "Ótimo Desempenho!",
+                    description: "Você está gerenciando bem suas despesas! Que tal começar a pensar em investir uma parte do que sobra?"
+                });
+            }
+
+            // Dica sobre criar reserva de emergência
+            if (transactions.length > 5 && totalBalance > 500) { // Se já tem algumas transações e saldo positivo
+                tips.push({
+                    title: "Pense na Reserva de Emergência!",
+                    description: "Ter uma reserva para imprevistos é crucial. Comece a guardar um pouco todo mês para sua segurança financeira."
+                });
+            }
+
+            // Renderiza as dicas
+            if (tips.length === 0) {
+                tipsContainer.innerHTML = `<p class="text-gray-400 text-center">Nenhuma dica disponível no momento. Adicione mais transações para obter insights!</p>`;
+            } else {
+                tips.forEach(tip => {
+                    const tipElement = `
+                        <div class="card p-6 border-l-4 border-purple-500">
+                            <h4 class="text-xl font-semibold text-white mb-2">${tip.title}</h4>
+                            <p class="text-gray-300">${tip.description}</p>
+                        </div>
+                    `;
+                    tipsContainer.innerHTML += tipElement;
+                });
+            }
+        }
+
+        // Lógica para Navegação entre Seções
+        const navLinks = document.querySelectorAll('aside nav ul li a');
+        const contentSections = document.querySelectorAll('main section');
+
+        function hideAllContentSections() {
+            contentSections.forEach(section => {
+                section.classList.add('hidden');
+                section.classList.remove('active-content');
+            });
+        }
+
+        function deactivateAllNavLinks() {
+            navLinks.forEach(link => {
+                link.classList.remove('text-purple-400', 'bg-gray-700');
+                link.classList.add('text-gray-300', 'hover:text-purple-400', 'hover:bg-gray-700');
+            });
+        }
+
+        function activateNavLink(id) {
+            deactivateAllNavLinks();
+            const activeLink = document.getElementById(id);
+            if (activeLink) {
+                activeLink.classList.remove('text-gray-300', 'hover:text-purple-400', 'hover:bg-gray-700');
+                activeLink.classList.add('text-purple-400', 'bg-gray-700');
+            }
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.id.replace('nav-', '') + '-content'; // Ex: nav-dashboard -> dashboard-content
+                
+                hideAllContentSections();
+                document.getElementById(targetId).classList.remove('hidden');
+                document.getElementById(targetId).classList.add('active-content');
+                
+                activateNavLink(link.id);
+            });
+        });
+
+        // Inicialização do Aplicativo
+        window.onload = renderApp;
+    </script>
+</body>
+</html>
